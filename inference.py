@@ -167,7 +167,7 @@ def resize_mask(mask, latent, process_first_frame_only=True):
     return resized_mask
 
 
-# Will error if the minimal version of diffusers is not installed. Remove at your own risks.
+# Will error if the minimal version of diffusers is not installed. Remove at your own risks
 check_min_version("0.18.0.dev0")
 
 logger = get_logger(__name__, log_level="INFO")
