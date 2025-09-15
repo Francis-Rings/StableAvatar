@@ -4,7 +4,6 @@ checkpoints
 
 # Generated outputs
 outputs/
-requirements.txt
 
 # Virtual environments
 venv/
