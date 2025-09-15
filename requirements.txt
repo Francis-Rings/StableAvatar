@@ -1,37 +1,70 @@
+# PyTorch installation notes:
+# For CUDA 12.4: pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu124
+# For CUDA 12.8: pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+# The version ranges below support both configurations
+#
+# Installation order optimized for efficiency:
+# 1. Build tools and core dependencies first
+# 2. PyTorch ecosystem (large packages that others depend on)
+# 3. Computer vision and image processing
+# 4. ML/AI frameworks
+# 5. Audio/video processing
+# 6. Utilities and other packages
+#
+# Removed packages that are dependencies of others:
+# - tokenizers (dependency of transformers)
+# - imageio-ffmpeg (dependency of imageio[ffmpeg])
+#
+# Optional packages (for enhanced performance/features):
+# - flash-attn (for faster attention computation, install with: pip install flash-attn)
+# - xformers (for memory efficient attention, install with: pip install xformers)
+# - bitsandbytes (for 8-bit training, install with: pip install bitsandbytes)
+# - audio-separator[gpu] (for vocal separation, install with: pip install audio-separator[gpu])
+# - decord (for faster video reading, install with: pip install decord)
+#   Note: decord is not available on macOS, falls back to torchvision automatically
+
+# Build tools and core dependencies
 ninja
-Pillow
-einops
-safetensors
-timm
-tomesd
-torch==2.7.0
-torchdiffeq
-torchsde
-decord
-datasets
-torchvision==0.22.0
-opencv-python>=4.9.0.80
-diffusers==0.30.1
-transformers==4.51.3
-tokenizers>=0.20.3
-accelerate>=1.1.1
+numpy>=1.23.5,<2
 tqdm
 easydict
-ftfy
-dashscope
-imageio-ffmpeg
-gradio>=5.0.0
-numpy>=1.23.5,<2
-scikit-image
-opencv-python
 omegaconf
-SentencePiece
+safetensors
+
+# PyTorch ecosystem (install first as other packages depend on these)
+torch>=2.6.0,<=2.7.0
+torchvision>=0.21.0,<=0.22.0
+torchaudio>=2.1.1,<=2.7.0
+torchdiffeq
+torchsde
+
+# Computer vision and image processing
+Pillow
+opencv-python>=4.9.0.80
+scikit-image
 albumentations
 imageio[ffmpeg]
 imageio[pyav]
+
+# ML/AI frameworks and transformers
+transformers==4.51.3
+diffusers==0.30.1
+accelerate>=1.1.1
+timm
+tomesd
+einops
+ftfy
+SentencePiece
+dashscope
+
+# Audio and video processing
+librosa
+moviepy==1.0.3
+
+# Data handling and utilities
+datasets
 tensorboard
 beautifulsoup4
-ftfy
-librosa
-torchaudio==2.7.0
-moviepy==1.0.3
+
+# Web interface
+gradio>=5.0.0

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import torch
 import psutil
 import argparse
@@ -15,6 +16,10 @@ from wan.models.wan_image_encoder import CLIPModel
 from wan.pipeline.wan_inference_long_pipeline import WanI2VTalkingInferenceLongPipeline
 from wan.utils.fp8_optimization import replace_parameters_by_name, convert_weight_dtype_wrapper, convert_model_weight_to_float8
 from wan.utils.utils import get_image_to_video_latent, save_videos_grid
+from wan.utils.language_utils import (
+    detect_browser_language, get_interface_texts, get_display_language, 
+    get_language_choices, create_language_detection_js
+)
 import numpy as np
 import librosa
 import datetime
@@ -277,162 +282,165 @@ def vocal_separation(audio_path):
     return f"outputs/{timestamp}.wav", f"Generated outputs/{timestamp}.wav / 已生成outputs/{timestamp}.wav"
 
 
-def update_language(language):
-    if language == "English":
-        return {
-            GPU_memory_mode: gr.Dropdown(label="GPU Memory Mode", info="Normal uses 25G VRAM, model_cpu_offload uses 13G VRAM"),
-            teacache_threshold: gr.Slider(label="TeaCache Threshold", info="Recommended 0.1, 0 disables TeaCache acceleration"),
-            num_skip_start_steps: gr.Slider(label="Skip Start Steps", info="Recommended 5"),
-            clip_sample_n_frames: gr.Slider(label="Clip Sample Frames", info="Video frames, 81=2s@25fps, 161=4s@25fps, must be 4n+1"),
-            image_path: gr.Image(label="Upload Image"),
-            audio_path: gr.Audio(label="Upload Audio"),
-            prompt: gr.Textbox(label="Prompt"),
-            negative_prompt: gr.Textbox(label="Negative Prompt"),
-            generate_button: gr.Button("🎬 Start Generation"),
-            width: gr.Slider(label="Width"),
-            height: gr.Slider(label="Height"),
-            exchange_button: gr.Button("🔄 Swap Width/Height"),
-            adjust_button: gr.Button("Adjust Size Based on Image"),
-            guidance_scale: gr.Slider(label="Guidance Scale"),
-            num_inference_steps: gr.Slider(label="Sampling Steps (Recommended 50)"),
-            text_guide_scale: gr.Slider(label="Text Guidance Scale"),
-            audio_guide_scale: gr.Slider(label="Audio Guidance Scale"),
-            motion_frame: gr.Slider(label="Motion Frame"),
-            fps: gr.Slider(label="FPS"),
-            overlap_window_length: gr.Slider(label="Overlap Window Length"),
-            seed_param: gr.Number(label="Seed (positive integer, -1 for random)"),
-            info: gr.Textbox(label="Status"),
-            video_output: gr.Video(label="Generated Result"),
-            seed_output: gr.Textbox(label="Seed"),
-            video_path: gr.Video(label="Upload Video"),
-            extractor_button: gr.Button("🎬 Start Extraction"),
-            info2: gr.Textbox(label="Status"),
-            audio_output: gr.Audio(label="Generated Result"),
-            audio_path3: gr.Audio(label="Upload Audio"),
-            separation_button: gr.Button("🎬 Start Separation"),
-            info3: gr.Textbox(label="Status"),
-            audio_output3: gr.Audio(label="Generated Result")
-        }
-    else:
-        return {
-            GPU_memory_mode: gr.Dropdown(label="显存模式", info="Normal占用25G显存，model_cpu_offload占用13G显存"),
-            teacache_threshold: gr.Slider(label="teacache threshold", info="推荐参数0.1，0为禁用teacache加速"),
-            num_skip_start_steps: gr.Slider(label="跳过开始步数", info="推荐参数5"),
-            clip_sample_n_frames: gr.Slider(label="Clip采样帧数", info="视频帧数，81=2秒@25fps，161=4秒@25fps，必须为4n+1"),
-            image_path: gr.Image(label="上传图片"),
-            audio_path: gr.Audio(label="上传音频"),
-            prompt: gr.Textbox(label="提示词"),
-            negative_prompt: gr.Textbox(label="负面提示词"),
-            generate_button: gr.Button("🎬 开始生成"),
-            width: gr.Slider(label="宽度"),
-            height: gr.Slider(label="高度"),
-            exchange_button: gr.Button("🔄 交换宽高"),
-            adjust_button: gr.Button("根据图片调整宽高"),
-            guidance_scale: gr.Slider(label="guidance scale"),
-            num_inference_steps: gr.Slider(label="采样步数（推荐50步）"),
-            text_guide_scale: gr.Slider(label="text guidance scale"),
-            audio_guide_scale: gr.Slider(label="audio guidance scale"),
-            motion_frame: gr.Slider(label="motion frame"),
-            fps: gr.Slider(label="帧率"),
-            overlap_window_length: gr.Slider(label="overlap window length"),
-            seed_param: gr.Number(label="种子，请输入正整数，-1为随机"),
-            info: gr.Textbox(label="提示信息"),
-            video_output: gr.Video(label="生成结果"),
-            seed_output: gr.Textbox(label="种子"),
-            video_path: gr.Video(label="上传视频"),
-            extractor_button: gr.Button("🎬 开始提取"),
-            info2: gr.Textbox(label="提示信息"),
-            audio_output: gr.Audio(label="生成结果"),
-            audio_path3: gr.Audio(label="上传音频"),
-            separation_button: gr.Button("🎬 开始分离"),
-            info3: gr.Textbox(label="提示信息"),
-            audio_output3: gr.Audio(label="生成结果")
-        }
+def detect_and_set_language(request):
+    """Detect browser language and return appropriate language setting."""
+    try:
+        # Get Accept-Language header from request
+        accept_language = request.headers.get('Accept-Language', '')
+        detected_lang = detect_browser_language(accept_language)
+        return get_display_language(detected_lang)
+    except:
+        return "中文"  # Default fallback
 
+
+def update_language(language):
+    """Update interface language based on user selection."""
+    # The language parameter is actually the language code (second element of tuple)
+    # So we can use it directly
+    lang_code = language  # language is already the code like 'es', 'de', 'ja', etc.
+    texts = get_interface_texts(lang_code)
+    
+    # Return component updates in the same order as all_components
+    return [
+        gr.Markdown(f"""
+            <div>
+                <h2 style="font-size: 30px;text-align: center;">{texts['main']['title']}</h2>
+            </div>
+            """),
+        gr.Dropdown(label=texts["model_settings"]["gpu_memory_mode"], info=texts["model_settings"]["gpu_memory_info"]),
+        gr.Slider(label=texts["model_settings"]["teacache_threshold"], info=texts["model_settings"]["teacache_info"]),
+        gr.Slider(label=texts["model_settings"]["num_skip_start_steps"], info=texts["model_settings"]["skip_steps_info"]),
+        gr.Slider(label=texts["model_settings"]["clip_sample_n_frames"], info=texts["model_settings"]["clip_frames_info"]),
+        gr.Image(label=texts["video_generation"]["upload_image"]),
+        gr.Audio(label=texts["video_generation"]["upload_audio"]),
+        gr.Textbox(label=texts["video_generation"]["prompt"]),
+        gr.Textbox(label=texts["video_generation"]["negative_prompt"], value=texts["video_generation"]["negative_prompt_default"]),
+        gr.Button(texts["video_generation"]["start_generation"]),
+        gr.Slider(label=texts["video_generation"]["width"]),
+        gr.Slider(label=texts["video_generation"]["height"]),
+        gr.Button(texts["video_generation"]["swap_dimensions"]),
+        gr.Button(texts["video_generation"]["adjust_size"]),
+        gr.Slider(label=texts["video_generation"]["guidance_scale"]),
+        gr.Slider(label=texts["video_generation"]["sampling_steps"]),
+        gr.Slider(label=texts["video_generation"]["text_guide_scale"]),
+        gr.Slider(label=texts["video_generation"]["audio_guide_scale"]),
+        gr.Slider(label=texts["video_generation"]["motion_frame"]),
+        gr.Slider(label=texts["video_generation"]["fps"]),
+        gr.Slider(label=texts["video_generation"]["overlap_window_length"]),
+        gr.Number(label=texts["video_generation"]["seed"]),
+        gr.Textbox(label=texts["video_generation"]["status"]),
+        gr.Video(label=texts["video_generation"]["generated_result"]),
+        gr.Textbox(label=texts["video_generation"]["seed_output"]),
+        gr.Video(label=texts["audio_extraction"]["upload_video"]),
+        gr.Button(texts["audio_extraction"]["start_extraction"]),
+        gr.Textbox(label=texts["audio_extraction"]["status"]),
+        gr.Audio(label=texts["audio_extraction"]["generated_result"]),
+        gr.Audio(label=texts["vocal_separation"]["upload_audio"]),
+        gr.Button(texts["vocal_separation"]["start_separation"]),
+        gr.Textbox(label=texts["vocal_separation"]["status"]),
+        gr.Audio(label=texts["vocal_separation"]["generated_result"])
+    ]
+
+
+# Get initial language texts (default to English)
+initial_texts = get_interface_texts("en")
 
 with gr.Blocks(theme=gr.themes.Base()) as demo:
-    gr.Markdown("""
+    # Create dynamic device info component that updates with language
+    device_info_display = gr.Markdown(f"""
             <div>
-                <h2 style="font-size: 30px;text-align: center;">StableAvatar</h2>
+                <h2 style="font-size: 30px;text-align: center;">{initial_texts['main']['title']}</h2>
             </div>
             """)
     
+    # Set English as the default language (use language code since Radio uses codes as values)
+    default_language = "en"
+    
     language_radio = gr.Radio(
-        choices=["English", "中文"], 
-        value="中文", 
-        label="Language / 语言"
+        choices=get_language_choices(), 
+        value=default_language, 
+        label=initial_texts['main']['language_label']
     )
     
-    with gr.Accordion("Model Settings / 模型设置", open=False):
+    with gr.Accordion(initial_texts['main']['model_settings'], open=False):
         with gr.Row():
             GPU_memory_mode = gr.Dropdown(
-                label = "显存模式", 
-                info = "Normal占用25G显存，model_cpu_offload占用13G显存", 
+                label = initial_texts['model_settings']['gpu_memory_mode'], 
+                info = initial_texts['model_settings']['gpu_memory_info'], 
                 choices = ["Normal", "model_cpu_offload", "model_cpu_offload_and_qfloat8", "sequential_cpu_offload"], 
                 value = "Normal"
             )
-            teacache_threshold = gr.Slider(label="teacache threshold", info = "推荐参数0.1，0为禁用teacache加速", minimum=0, maximum=1, step=0.01, value=0)
-            num_skip_start_steps = gr.Slider(label="跳过开始步数", info = "推荐参数5", minimum=0, maximum=100, step=1, value=5)
+            teacache_threshold = gr.Slider(
+                label=initial_texts['model_settings']['teacache_threshold'], 
+                info=initial_texts['model_settings']['teacache_info'], 
+                minimum=0, maximum=1, step=0.01, value=0
+            )
+            num_skip_start_steps = gr.Slider(
+                label=initial_texts['model_settings']['num_skip_start_steps'], 
+                info=initial_texts['model_settings']['skip_steps_info'], 
+                minimum=0, maximum=100, step=1, value=5
+            )
         with gr.Row():
             clip_sample_n_frames = gr.Slider(
-                label="Clip Sample Frames", 
-                info="视频帧数，81=2秒@25fps，161=4秒@25fps，必须为4n+1", 
+                label=initial_texts['model_settings']['clip_sample_n_frames'], 
+                info=initial_texts['model_settings']['clip_frames_info'], 
                 minimum=41, 
                 maximum=321, 
                 step=4, 
                 value=81
             )
-    with gr.TabItem("StableAvatar"):
+    with gr.TabItem(initial_texts['main']['video_generation']):
         with gr.Row():
             with gr.Column():
                 with gr.Row():
-                    image_path = gr.Image(label="上传图片", type="filepath", height=280)
-                    audio_path = gr.Audio(label="上传音频", type="filepath")
-                prompt = gr.Textbox(label="提示词", value="")
-                negative_prompt = gr.Textbox(label="负面提示词", value="色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走")
-                generate_button = gr.Button("🎬 开始生成", variant='primary')
-                with gr.Accordion("Parameter Settings / 参数设置", open=True):
+                    image_path = gr.Image(label=initial_texts['video_generation']['upload_image'], type="filepath", height=280)
+                    audio_path = gr.Audio(label=initial_texts['video_generation']['upload_audio'], type="filepath")
+                prompt = gr.Textbox(label=initial_texts['video_generation']['prompt'], value="")
+                negative_prompt = gr.Textbox(label=initial_texts['video_generation']['negative_prompt'], value=initial_texts['video_generation']['negative_prompt_default'])
+                generate_button = gr.Button(initial_texts['video_generation']['start_generation'], variant='primary')
+                with gr.Accordion(initial_texts['main']['model_settings'], open=True):
                     with gr.Row():
-                        width = gr.Slider(label="宽度", minimum=256, maximum=2048, step=16, value=512)
-                        height = gr.Slider(label="高度", minimum=256, maximum=2048, step=16, value=512)
+                        width = gr.Slider(label=initial_texts['video_generation']['width'], minimum=256, maximum=2048, step=16, value=512)
+                        height = gr.Slider(label=initial_texts['video_generation']['height'], minimum=256, maximum=2048, step=16, value=512)
                     with gr.Row():
-                        exchange_button = gr.Button("🔄 交换宽高")
-                        adjust_button = gr.Button("根据图片调整宽高")
+                        exchange_button = gr.Button(initial_texts['video_generation']['swap_dimensions'])
+                        adjust_button = gr.Button(initial_texts['video_generation']['adjust_size'])
                     with gr.Row():
-                        guidance_scale = gr.Slider(label="guidance scale", minimum=1.0, maximum=10.0, step=0.1, value=6.0)
-                        num_inference_steps = gr.Slider(label="采样步数（推荐50步）", minimum=1, maximum=100, step=1, value=10)
+                        guidance_scale = gr.Slider(label=initial_texts['video_generation']['guidance_scale'], minimum=1.0, maximum=10.0, step=0.1, value=6.0)
+                        num_inference_steps = gr.Slider(label=initial_texts['video_generation']['sampling_steps'], minimum=1, maximum=100, step=1, value=10)
                     with gr.Row():
-                        text_guide_scale = gr.Slider(label="text guidance scale", minimum=1.0, maximum=10.0, step=0.1, value=3.0)
-                        audio_guide_scale = gr.Slider(label="audio guidance scale", minimum=1.0, maximum=10.0, step=0.1, value=5.0)
+                        text_guide_scale = gr.Slider(label=initial_texts['video_generation']['text_guide_scale'], minimum=1.0, maximum=10.0, step=0.1, value=3.0)
+                        audio_guide_scale = gr.Slider(label=initial_texts['video_generation']['audio_guide_scale'], minimum=1.0, maximum=10.0, step=0.1, value=5.0)
                     with gr.Row():
-                        motion_frame = gr.Slider(label="motion frame", minimum=1, maximum=50, step=1, value=25)
-                        fps = gr.Slider(label="帧率", minimum=1, maximum=60, step=1, value=25)
+                        motion_frame = gr.Slider(label=initial_texts['video_generation']['motion_frame'], minimum=1, maximum=50, step=1, value=25)
+                        fps = gr.Slider(label=initial_texts['video_generation']['fps'], minimum=1, maximum=60, step=1, value=25)
                     with gr.Row():
-                        overlap_window_length = gr.Slider(label="overlap window length", minimum=1, maximum=20, step=1, value=5)
-                        seed_param = gr.Number(label="种子，请输入正整数，-1为随机", value=-1)
+                        overlap_window_length = gr.Slider(label=initial_texts['video_generation']['overlap_window_length'], minimum=1, maximum=20, step=1, value=5)
+                        seed_param = gr.Number(label=initial_texts['video_generation']['seed'], value=-1)
             with gr.Column():
-                info = gr.Textbox(label="提示信息", interactive=False)
-                video_output = gr.Video(label="生成结果", interactive=False)
-                seed_output = gr.Textbox(label="种子")
-    with gr.TabItem("Audio Extraction / 音频提取"):
+                info = gr.Textbox(label=initial_texts['video_generation']['status'], interactive=False)
+                video_output = gr.Video(label=initial_texts['video_generation']['generated_result'], interactive=False)
+                seed_output = gr.Textbox(label=initial_texts['video_generation']['seed_output'])
+    with gr.TabItem(initial_texts['main']['audio_extraction']):
         with gr.Row():
             with gr.Column():
-                video_path = gr.Video(label="上传视频", height=500)
-                extractor_button = gr.Button("🎬 开始提取", variant='primary')
+                video_path = gr.Video(label=initial_texts['audio_extraction']['upload_video'], height=500)
+                extractor_button = gr.Button(initial_texts['audio_extraction']['start_extraction'], variant='primary')
             with gr.Column():
-                info2 = gr.Textbox(label="提示信息", interactive=False)
-                audio_output = gr.Audio(label="生成结果", interactive=False)
-    with gr.TabItem("Vocal Separation / 人声分离"):
+                info2 = gr.Textbox(label=initial_texts['audio_extraction']['status'], interactive=False)
+                audio_output = gr.Audio(label=initial_texts['audio_extraction']['generated_result'], interactive=False)
+    with gr.TabItem(initial_texts['main']['vocal_separation']):
         with gr.Row():
             with gr.Column():
-                audio_path3 = gr.Audio(label="上传音频", type="filepath")
-                separation_button = gr.Button("🎬 开始分离", variant='primary')
+                audio_path3 = gr.Audio(label=initial_texts['vocal_separation']['upload_audio'], type="filepath")
+                separation_button = gr.Button(initial_texts['vocal_separation']['start_separation'], variant='primary')
             with gr.Column():
-                info3 = gr.Textbox(label="提示信息", interactive=False)
-                audio_output3 = gr.Audio(label="生成结果", interactive=False)
+                info3 = gr.Textbox(label=initial_texts['vocal_separation']['status'], interactive=False)
+                audio_output3 = gr.Audio(label=initial_texts['vocal_separation']['generated_result'], interactive=False)
 
-    all_components = [GPU_memory_mode, teacache_threshold, num_skip_start_steps, clip_sample_n_frames, image_path, audio_path, prompt, negative_prompt, generate_button, width, height, exchange_button, adjust_button, guidance_scale, num_inference_steps, text_guide_scale, audio_guide_scale, motion_frame, fps, overlap_window_length, seed_param, info, video_output, seed_output, video_path, extractor_button, info2, audio_output, audio_path3, separation_button, info3, audio_output3]
+    all_components = [device_info_display, GPU_memory_mode, teacache_threshold, num_skip_start_steps, clip_sample_n_frames, image_path, audio_path, prompt, negative_prompt, generate_button, width, height, exchange_button, adjust_button, guidance_scale, num_inference_steps, text_guide_scale, audio_guide_scale, motion_frame, fps, overlap_window_length, seed_param, info, video_output, seed_output, video_path, extractor_button, info2, audio_output, audio_path3, separation_button, info3, audio_output3]
 
+    # Use the full update_language function to translate everything
     language_radio.change(
         fn=update_language,
         inputs=[language_radio],
