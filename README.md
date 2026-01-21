@@ -97,21 +97,49 @@ For the basic version of the model checkpoint (Wan2.1-1.3B-based), it supports g
 
 ### 🧱 Environment setup
 
-```
+Choose the appropriate setup based on your hardware:
+
+#### CUDA 12.4 (RTX 40xx series and earlier)
+```bash
 pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
-# Optional to install flash_attn to accelerate attention computation
-pip install flash_attn
+# Optional: install flash-attn for faster attention computation (NVIDIA only)
+pip install flash-attn
 ```
 
-### 🧱 Environment setup for Blackwell series chips
-
-```
+#### CUDA 12.8 (Blackwell series chips - RTX 50xx, H200, etc.)
+```bash
 pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
-# Optional to install flash_attn to accelerate attention computation
-pip install flash_attn
+# Optional: install flash-attn for faster attention computation (NVIDIA only)
+pip install flash-attn
 ```
+
+#### CPU-only (macOS, Linux without GPU, or for testing)
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+```
+
+### 🚀 Optional Packages for Enhanced Performance
+
+For better performance and additional features, you can install these optional packages:
+
+```bash
+# Memory efficient attention (alternative to flash-attn, works on more hardware)
+pip install xformers
+
+# 8-bit training optimization (for LoRA training)
+pip install bitsandbytes
+
+# Vocal separation functionality
+pip install audio-separator[gpu]
+
+# Faster video reading (not available on macOS, falls back to torchvision automatically)
+pip install decord
+```
+
+**Note**: All these packages are optional. The system will automatically fall back to standard implementations if they're not installed. Install only the packages you need for your specific use case.
 
 ### 🧱 Download weights
 If you encounter connection issues with Hugging Face, you can utilize the mirror endpoint by setting the environment variable: `export HF_ENDPOINT=https://hf-mirror.com`.

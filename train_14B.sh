@@ -1,3 +1,4 @@
+#!/bin/bash
 export TOKENIZERS_PARALLELISM=false
 export MODEL_NAME="path/StableAvatar/checkpoints/Wan2.1-I2V-14B-480P"
 
