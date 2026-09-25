@@ -69,6 +69,7 @@ We observe that the main reason preventing existing models from generating long 
 To address this, StableAvatar introduces a novel Time-step-aware Audio Adapter that prevents error accumulation via time-step-aware modulation. During inference, we propose a novel Audio Native Guidance Mechanism to further enhance the audio synchronization by leveraging the diffusion’s own evolving joint audio-latent prediction as a dynamic guidance signal. To enhance the smoothness of the infinite-length videos, we introduce a Dynamic Weighted Sliding-window Strategy that fuses latent over time. Experiments on benchmarks show the effectiveness of StableAvatar both qualitatively and quantitatively. 
 
 ## News
+* `[2026-9-25]`:🔥 StableAvatar is accepted by NeurIPS2026🎉🎉🎉.
 * `[2025-10-12]`: 🔥 We fixed the inconsistency between **multi-GPU** and **single-GPU** inference. The patch has been merged—please update to the latest version and give it a try! 🙌
 * `[2025-9-8]`:🔥  We are thrilled to release an interesting 🔥🔥 brand new demo 🔥🔥! The generated videos can be seen on [YouTube](https://www.youtube.com/watch?v=GH4hrxIis3Q) and [Bilibili](https://www.bilibili.com/video/BV1jGYPzqEux).
 * `[2025-8-29]`:🔥 StableAvatar public demo is now live on [Hugging Face Spaces](https://huggingface.co/spaces/YinmingHuang/StableAvatar). (Note: due to the long video generation time, the demo is currently accessible to <b>Hugging Face Pro</b> users only.)
