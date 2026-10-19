@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copied from https://github.com/kq-chen/qwen-vl-utils
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.
 from __future__ import annotations

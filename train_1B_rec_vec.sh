@@ -1,3 +1,4 @@
+#!/bin/bash
 export TOKENIZERS_PARALLELISM=false
 export MODEL_NAME="path/StableAvatar/checkpoints/Wan2.1-Fun-V1.1-1.3B-InP"
 export NCCL_IB_DISABLE=1

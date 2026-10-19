@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import inspect
 import math
 from dataclasses import dataclass

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 This module defines the Wav2Vec model, which is a pre-trained model for speech recognition and understanding.
 It inherits from the Wav2Vec2Model class in the transformers library and provides additional functionalities

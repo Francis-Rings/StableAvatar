@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import inspect
 import math
 from typing import Callable, List, Optional, Tuple, Union

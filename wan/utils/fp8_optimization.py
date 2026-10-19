@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Modified from https://github.com/kijai/ComfyUI-MochiWrapper
 """
 import torch

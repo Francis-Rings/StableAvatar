@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Modified from https://github.com/Wan-Video/Wan2.1/blob/main/wan/modules/vae.py
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.
 from typing import Tuple, Union
