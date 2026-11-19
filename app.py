@@ -253,10 +253,13 @@ def adjust_width_height(image):
 
 def audio_extractor(video_path):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    video = VideoFileClip(video_path)
-    audio = video.audio
-    audio.write_audiofile(f"outputs/{timestamp}.wav", codec='pcm_s16le')
-    return f"outputs/{timestamp}.wav", f"Generated outputs/{timestamp}.wav / 已生成outputs/{timestamp}.wav"
+    output_path = f"outputs/{timestamp}.wav"
+    with VideoFileClip(video_path) as video:
+        if video.audio is None:
+            raise gr.Error("The video has no audio track.")
+        os.makedirs("outputs", exist_ok=True)
+        video.audio.write_audiofile(output_path, codec='pcm_s16le')
+    return output_path, f"Generated {output_path} / 已生成{output_path}"
 
 
 def vocal_separation(audio_path):
